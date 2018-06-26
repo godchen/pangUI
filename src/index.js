@@ -1,4 +1,8 @@
-const components = [];
+import Alert from '../packages/alert/index.js';
+
+const components = [
+  Alert
+];
 
 const install = function (Vue, opts = {}) {
   components.map((component) => {
@@ -20,6 +24,7 @@ if (typeof window !== 'undefined' && window.Vue) {
 module.exports = {
   version: '0.1.0',
   install,
+  Alert
 };
 
 module.exports.default = module.exports;
