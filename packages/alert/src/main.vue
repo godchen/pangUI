@@ -1,19 +1,21 @@
 <template>
-  <div
-    class="pang-alert"
-    :class="typeClass"
-    v-show="visible"
-    role="alert"
-  >
-    <i class="pang-alert__icon" :class="[ iconClass ]"></i>
-    <div class="pang-alert__content">
-      <span class="pang-alert__title" v-if="title">{{ title }}</span>
-      <slot>
-        <p class="pang-alert__description" v-if="description">{{ description }}</p>
-      </slot>
-      <i class="pang-alert__closebtn" v-show="closable" @click="close()">{{closeText}}</i>
+  <transition name="pang-alert-fade">
+    <div
+      class="pang-alert"
+      :class="typeClass"
+      v-show="visible"
+      role="alert"
+    >
+      <i class="pang-alert__icon" :class="[ iconClass ]"></i>
+      <div class="pang-alert__content">
+        <span class="pang-alert__title" v-if="title">{{ title }}</span>
+        <slot>
+          <p class="pang-alert__description" v-if="description">{{ description }}</p>
+        </slot>
+        <i class="pang-alert__closebtn el-icon-close" v-show="closable" @click="close()">{{closeText}}</i>
+      </div>
     </div>
-  </div>
+  </transition>
 </template>
 
 <script type="text/babel">
@@ -42,12 +44,7 @@
       closable: {
         type: Boolean,
         default: true
-      },
-      closeText: {
-        type: String,
-        default: ''
-      },
-      center: Boolean
+      }
     },
 
     data() {
