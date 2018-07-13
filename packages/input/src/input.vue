@@ -46,8 +46,46 @@
       <span class="pang-input__suffix"
             v-if="$slots.suffix || suffixIcon || showClear || validateState && needStatusIcon"
             :style="suffixOffset">
+        <span class="pang-input__suffix-inner">
+          <template v-if="!showClear">
+            <slot name="suffix"></slot>
+            <i class="pang-input__icon"
+              v-if="suffixIcon"
+              :class="suffixIcon">
+            </i>
+          </template>
+          <i v-else
+            class="pang-input__icon pang-icon-circle-close pang-input__clear"
+            @click="clear"></i>
+        </span>
+        <i class="pang-input__icon"
+           v-if="validateState"
+           :class="['pang-input__validateIcon', validateIcon]"></i>
       </span>
+      <!-- 后置元素 -->
+      <div class="pang-input-group__append" v-if="$slots.append">
+        <slot name="append"></slot>
+      </div>
     </template>
+    <textarea
+      v-else
+      :tabindex="tabindex"
+      class="pang-textarea__inner"
+      :value="currentValue"
+      @compositionstart="handleComposition"
+      @compositionupdate="handleComposition"
+      @composotionend="handleComposition"
+      @input="handleInput"
+      ref="textarea"
+      v-bind="$attrs"
+      :disabled="inputDisabled"
+      :style="textareaStyle"
+      @focus="handleFocus"
+      @blur="handleBlur"
+      @change="handleChange"
+      :aria-label="label"
+    >
+    </textarea>
   </div>
 </template>
 
@@ -77,6 +115,8 @@
         focused: false,
         hovering: false,
         isOnComposition: false,
+        prefixOffset: null,
+        suffixOffset: null,
         textareaCalcStyle: {},
         valueBeforeComposition: null,
       };
@@ -94,6 +134,7 @@
       disabled: Boolean,
       label: String,
       prefixIcon: String,
+      resize: String,
       suffixIcon: String,
       size: String,
       tabindex: String,
@@ -117,12 +158,28 @@
       inputDisabled() {
         return this.disabled || (this.pangForm || {}).disabled;
       },
+      needStatusIcon() {
+        return this.pangForm ? this.pangForm.statusIcon : false;
+      },
       showClear() {
         return this.clearable &&
           !this.disabled &&
           !this.readonly &&
           this.currentValue !== '' &&
           (this.focused || this.hovering);
+      },
+      textareaStyle() {
+        return merge({}, this.textareaCalcStyle, { resize: this.resize});
+      },
+      validateState() {
+        return this.pangFormItem ? this.pangFormItem.validateState : '';
+      },
+      validateIcon() {
+        return {
+          validating: 'pang-icon-loading',
+          success: 'pang-icon-circle-check',
+          error: 'pang-icon-circle-close'
+        }[this.validateState]
       },
     },
 
@@ -131,6 +188,13 @@
     },
 
     methods: {
+      clear() {
+        this.$emit('input', '');
+        this.$emit('change', '');
+        this.$emit('clear');
+        this.setCurrentValue('');
+        this.focus();
+      },
       handleBlur(event) {
         this.focused = false;
         this.$emit('blur', event);

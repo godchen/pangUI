@@ -1,7 +1,9 @@
 import Alert from '../packages/alert/index.js';
+import Aside from '../packages/aside/index.js';
 
 const components = [
-  Alert
+  Alert,
+  Aside
 ];
 
 const install = function (Vue, opts = {}) {
@@ -24,7 +26,8 @@ if (typeof window !== 'undefined' && window.Vue) {
 module.exports = {
   version: '0.1.0',
   install,
-  Alert
+  Alert,
+  Aside
 };
 
 module.exports.default = module.exports;
