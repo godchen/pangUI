@@ -37,6 +37,16 @@
         @change="handleChange"
         :aria-label="label"
       >
+      <!-- 前置内容 -->
+      <span class="pang-input__prefix" v-if="$slots.prefix || prefixIcon" :style="prefixOffset">
+        <slot name="prefix"></slot>
+        <i class="pang-inpit__icon" v-if="prefixIcon" :class="prefixIcon"></i>
+      </span>
+      <!-- 后置内容 -->
+      <span class="pang-input__suffix"
+            v-if="$slots.suffix || suffixIcon || showClear || validateState && needStatusIcon"
+            :style="suffixOffset">
+      </span>
     </template>
   </div>
 </template>
@@ -73,27 +83,28 @@
     },
 
     props: {
-      size: String,
-      disabled: Boolean,
-      type: {
-        type: String,
-        default: 'text'
-      },
       autoComplete: {
         type: String,
         default: 'off'
+      },
+      clearable: {
+        type: Boolean,
+        default: false
+      },
+      disabled: Boolean,
+      label: String,
+      prefixIcon: String,
+      suffixIcon: String,
+      size: String,
+      tabindex: String,
+      type: {
+        type: String,
+        default: 'text'
       },
       validateEvent: {
         type: Boolean,
         default: true
       },
-      prefixIcon: String,
-      suffixIcon: String,
-      clearable: {
-        type: Boolean,
-        default: false
-      },
-      tabindex: String
     },
 
     computed: {
@@ -105,7 +116,14 @@
       },
       inputDisabled() {
         return this.disabled || (this.pangForm || {}).disabled;
-      }
+      },
+      showClear() {
+        return this.clearable &&
+          !this.disabled &&
+          !this.readonly &&
+          this.currentValue !== '' &&
+          (this.focused || this.hovering);
+      },
     },
 
     watch: {
@@ -113,6 +131,43 @@
     },
 
     methods: {
+      handleBlur(event) {
+        this.focused = false;
+        this.$emit('blur', event);
+        if (this.validateEvent) {
+          this.dispatch('PangFormItem', 'pang.form.blur', [this.currentValue]);
+        }
+      },
+      handleChange(event) {
+        this.$emit('change',event.target.value);
+      },
+      handleComposition(event) {
+        if (event.type === 'compositionend') {
+          this.isOnComposition = false;
+          this.currentValue = this.valueBeforeComposition;
+          this.valueBeforeComposition = null;
+          this.handleInput(event);
+        } else {
+          const text = event.target.value;
+          const lastCharacter = text[text.length - 1] || '';
+          this.isOnComposition = !isKorean(lastCharacter);
+          if (this.isOnComposition && event.type === 'compositionstart'){
+            this.valueBeforeComposition = text;
+          }
+        }
+      },
+      handleFocus(event) {
+        this.focused = true;
+        this.$emit('focus', event);
+      },
+      handleInput(event) {
+        const value = event.target.value;
+        this.setCurrentValue(value);
+        if (this.isOnComposition) {
+          return;
+        }
+        this.$emit('input', value);
+      },
       resizeTextarea() {
         if (this.$isServer) {
           return;
@@ -132,33 +187,6 @@
 
         this.textareaCalcStyle = calcTextareaHeight(this.$refs.textarea, minRows, maxRows);
       },
-      handleFocus(event) {
-        this.focused = true;
-        this.$emit('focus', event);
-      },
-      handleComposition(event) {
-        if (event.type === 'compositionend') {
-          this.isOnComposition = false;
-          this.currentValue = this.valueBeforeComposition;
-          this.valueBeforeComposition = null;
-          this.handleInput(event);
-        } else {
-          const text = event.target.value;
-          const lastCharacter = text[text.length - 1] || '';
-          this.isOnComposition = !isKorean(lastCharacter);
-          if (this.isOnComposition && event.type === 'compositionstart'){
-            this.valueBeforeComposition = text;
-          }
-        }
-      },
-      handleInput(event) {
-        const value = event.target.value;
-        this.setCurrentValue(value);
-        if (this.isOnComposition) {
-          return;
-        }
-        this.$emit('input', value);
-      },
       setCurrentValue(value) {
         if (this.isOnComposition && value === this.valueBeforeComposition) {
           return;
@@ -171,7 +199,7 @@
           this.resizeTextarea();
         });
         if (this.validateEvent) {
-          this.dispatch('PangFormItem', 'el.form.change', [value]);
+          this.dispatch('PangFormItem', 'pang.form.change', [value]);
         }
       }
     },
