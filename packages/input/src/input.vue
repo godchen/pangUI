@@ -90,13 +90,16 @@
 </template>
 
 <script>
-  import { isKorean } from '/src/utils/shared';
   import calcTextareaHeight from './calcTextareaHeight';
+  import emitter from '/src/mixins/emitter';
+  import Migrating from '/src/mixins/migrating';
+  import merge from '/src/utils/merge';
+  import { isKorean } from '/src/utils/shared';
 
   export default {
     name: 'PANGInput',
     componentName: 'PANGInput',
-    mixins: [],
+    mixins: [emitter, Migrating],
 
     inheritAttrs: false,
 
@@ -127,11 +130,16 @@
         type: String,
         default: 'off'
       },
+      autosize: {
+        type: [Boolean, Object],
+        default: false
+      },
       clearable: {
         type: Boolean,
         default: false
       },
       disabled: Boolean,
+      form: String,
       label: String,
       prefixIcon: String,
       resize: String,
@@ -141,6 +149,9 @@
       type: {
         type: String,
         default: 'text'
+      },
+      value: {
+        String, Number
       },
       validateEvent: {
         type: Boolean,
@@ -157,6 +168,9 @@
       },
       inputDisabled() {
         return this.disabled || (this.pangForm || {}).disabled;
+      },
+      isGroup() {
+        return this.$slots.prepend || this.$slots.append;
       },
       needStatusIcon() {
         return this.pangForm ? this.pangForm.statusIcon : false;
@@ -184,16 +198,47 @@
     },
 
     watch: {
-
+      'value'(val, oldValue) {
+        this.setCurrentValue(val);
+      }
     },
 
     methods: {
+      blur() {
+        (this.$refs.input || this.$refs.textarea).blur();
+      },
+      calcIconOffset(place) {
+        const pendantMap = {
+          'suf': 'append',
+          'pre': 'prepend'
+        };
+
+        const pendant = pendantMapp[place];
+
+        if(this.$slots[pendant]) {
+          return { transform: `translateX(${place === 'suf' ? '-' : ''}${this.$el.querySelector(`.pang-input-group__${pendant}`).offsetWidth}px)`};
+        }
+      },
       clear() {
         this.$emit('input', '');
         this.$emit('change', '');
         this.$emit('clear');
         this.setCurrentValue('');
         this.focus();
+      },
+      focus() {
+        (this.$refs.input || this.$refs.textarea).focus();
+      },
+      getMigratingConfig() {
+        return {
+          props: {
+            'icon': 'icon is removed, use suffix-icon / prefix-icon instead.',
+            'on-icon-click': 'on-icon-click is removed.'
+          },
+          events: {
+            'click': 'click is removed.'
+          }
+        }
       },
       handleBlur(event) {
         this.focused = false;
@@ -251,6 +296,9 @@
 
         this.textareaCalcStyle = calcTextareaHeight(this.$refs.textarea, minRows, maxRows);
       },
+      select() {
+        (this.$refs.input || this.$refs.textarea).select();
+      },
       setCurrentValue(value) {
         if (this.isOnComposition && value === this.valueBeforeComposition) {
           return;
@@ -269,11 +317,15 @@
     },
 
     created() {
-
+      this.$on('inputSelect', this.select);
     },
 
     mounted() {
-
+      this.resizeTextarea();
+      if (this.isGroup) {
+        this.prefixOffset = this.calcIconOffset('pre');
+        this.suffixOffset = this.calcIconOffset('suf');
+      }
     }
   }
 </script>
